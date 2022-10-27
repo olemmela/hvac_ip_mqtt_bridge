@@ -7,6 +7,7 @@ import (
 	"github.com/gsasha/hvac_ip_mqtt_bridge/hvac/base"
 	"log"
 	"strings"
+	"strconv"
 	"text/template"
 	"time"
 )
@@ -270,8 +271,15 @@ func (c *SamsungAC2878) handleAttributes(attrs []Attr) {
 			c.stateNotifier.UpdateTemperature(attr.Value)
 		case "AC_FUN_TEMPNOW":
 			c.stateNotifier.UpdateCurrentTemperature(attr.Value)
+		case "AC_OUTDOOR_TEMP":
+			value, err := strconv.Atoi(attr.Value)
+			if err == nil {
+				c.stateNotifier.UpdateAttribute("outdoor_temperature", strconv.Itoa(value - 55))
+			}
 		case "AC_FUN_WINDLEVEL":
 			c.stateNotifier.UpdateFanMode(FanModeFromAC(attr.Value))
+		case "AC_ADD2_USEDPOWER":
+			c.stateNotifier.UpdateAttribute("used_power", attr.Value)
 		}
 	}
 }

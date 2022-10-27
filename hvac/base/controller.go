@@ -6,7 +6,7 @@ type StateNotifier interface {
 	UpdateFanMode(fanMode string)
 	UpdateTemperature(temperature string)
 	UpdateCurrentTemperature(temperature string)
-	UpdateAttributes(attributes map[string]string)
+	UpdateAttribute(topic string, attribute string)
 }
 
 type Controller interface {

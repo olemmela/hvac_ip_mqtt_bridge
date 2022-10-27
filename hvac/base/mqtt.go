@@ -50,8 +50,8 @@ func (m *MQTTNotifier) UpdateTemperature(temperature string) {
 func (m *MQTTNotifier) UpdateCurrentTemperature(temperature string) {
 	m.mqtt.updateCurrentTemperature(m.prefix, temperature)
 }
-func (m *MQTTNotifier) UpdateAttributes(attributes map[string]string) {
-	m.mqtt.updateAttributes(m.prefix, attributes)
+func (m *MQTTNotifier) UpdateAttribute(topic string, attribute string) {
+	m.mqtt.updateAttribute(m.prefix, topic, attribute)
 }
 
 func NewMQTT(broker string, username string, password string, clientId string) *MQTT {
@@ -164,8 +164,8 @@ func (m *MQTT) updateTemperature(prefix string, temperature string) {
 func (m *MQTT) updateCurrentTemperature(prefix string, temperature string) {
 	m.publish(prefix, currentTemperatureStateTopic, temperature)
 }
-func (m *MQTT) updateAttributes(prefix string, attributes map[string]string) {
-	// TODO(gsasha): implement.
+func (m *MQTT) updateAttribute(prefix string, topic string, attribute string) {
+	m.publish(prefix, topic, attribute)
 }
 func (m *MQTT) publish(prefix string, topic string, message string) {
 	log.Println("mqtt publishing", prefix+"/"+topic, message)
