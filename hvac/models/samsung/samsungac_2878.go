@@ -25,9 +25,6 @@ type SamsungAC2878 struct {
 	err                string
 	powerMode          string
 	opMode             string
-	fanMode            string
-	temperature        string
-	currentTemperature string
 	attrs              map[string]string
 }
 
@@ -241,44 +238,40 @@ func (c *SamsungAC2878) handleUpdateStatus(status *Status) {
 		return
 	}
 	c.handleAttributes(status.Attr)
-	c.notifyState()
 }
 
 func (c *SamsungAC2878) handleDeviceState(deviceState *DeviceState) {
 	c.handleAttributes(deviceState.Device.Attr)
-	c.notifyState()
 }
 
-func (c *SamsungAC2878) notifyState() {
-	if c.stateNotifier == nil {
-		fmt.Println("Error: want to notify state, but no notifer defined")
-		return
-	}
+func (c *SamsungAC2878) handleOpModeUpdate() {
 	if strings.ToLower(c.powerMode) == "off" {
 		c.stateNotifier.UpdateOpMode(OpModeFromAC("Off"))
 	} else {
 		c.stateNotifier.UpdateOpMode(OpModeFromAC(c.opMode))
 	}
-	c.stateNotifier.UpdateFanMode(FanModeFromAC(c.fanMode))
-	c.stateNotifier.UpdateTemperature(c.temperature)
-	c.stateNotifier.UpdateCurrentTemperature(c.currentTemperature)
-	c.stateNotifier.UpdateAttributes(c.attrs)
 }
 
 func (c *SamsungAC2878) handleAttributes(attrs []Attr) {
+	if c.stateNotifier == nil {
+		fmt.Println("Error: want to notify state, but no notifer defined")
+		return
+	}
 	for _, attr := range attrs {
 		c.attrs[attr.Type] = attr.Value
 		switch attr.ID {
 		case "AC_FUN_POWER":
 			c.powerMode = attr.Value
+			c.handleOpModeUpdate()
 		case "AC_FUN_OPMODE":
 			c.opMode = attr.Value
+			c.handleOpModeUpdate()
 		case "AC_FUN_TEMPSET":
-			c.temperature = attr.Value
+			c.stateNotifier.UpdateTemperature(attr.Value)
 		case "AC_FUN_TEMPNOW":
-			c.currentTemperature = attr.Value
+			c.stateNotifier.UpdateCurrentTemperature(attr.Value)
 		case "AC_FUN_WINDLEVEL":
-			c.fanMode = attr.Value
+			c.stateNotifier.UpdateFanMode(FanModeFromAC(attr.Value))
 		}
 	}
 }
