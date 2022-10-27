@@ -87,8 +87,10 @@ func Load(configFile string) ([]*Device, error) {
 	if port == "" {
 		port = "1883"
 	}
+	username := config.MQTT.Username
+	password := config.MQTT.Password
 	mqttBroker := fmt.Sprintf("%s://%s:%s", protocol, config.MQTT.Host, port)
-	mqtt := base.NewMQTT(mqttBroker, "hvac_ip_mqtt_bridge")
+	mqtt := base.NewMQTT(mqttBroker, username, password, "hvac_ip_mqtt_bridge")
 
 	var devices []*Device
 	for _, deviceConfig := range config.Devices {

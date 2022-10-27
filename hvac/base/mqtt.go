@@ -54,7 +54,7 @@ func (m *MQTTNotifier) UpdateAttributes(attributes map[string]string) {
 	m.mqtt.updateAttributes(m.prefix, attributes)
 }
 
-func NewMQTT(broker string, clientId string) *MQTT {
+func NewMQTT(broker string, username string, password string, clientId string) *MQTT {
 	log.Printf("Connecting to MQTT broker %s for %s", broker, clientId)
 	m := &MQTT{
 		clientId:    clientId,
@@ -64,6 +64,12 @@ func NewMQTT(broker string, clientId string) *MQTT {
 
 	options := mqtt.NewClientOptions()
 	options.AddBroker(broker)
+	if username != "" {
+		options.SetUsername(username)
+	}
+	if password != "" {
+		options.SetPassword(password)
+	}
 	random_id := make([]byte, 8)
 	log.Printf("Reading random")
 	_, err := rand.Read(random_id)
