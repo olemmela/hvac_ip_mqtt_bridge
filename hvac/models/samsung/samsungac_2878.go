@@ -31,19 +31,20 @@ type SamsungAC2878 struct {
 	attrs              map[string]string
 }
 
-func NewSamsungAC2878(name string, host, port, duid, authToken string) *SamsungAC2878 {
+func NewSamsungAC2878(name string, host, port, duid, authToken string) (*SamsungAC2878, error) {
 	if port == "" {
 		port = "2878"
 	}
+	conn, err := base.NewTLSSocketConnection()
 	return &SamsungAC2878{
 		name:       name,
 		host:       host,
 		port:       port,
 		authToken:  authToken,
 		duid:       duid,
-		connection: base.NewTLSSocketConnection(),
+		connection: conn,
 		attrs:      make(map[string]string),
-	}
+	}, err
 }
 
 func (c *SamsungAC2878) SetStateNotifier(stateNotifier base.StateNotifier) {

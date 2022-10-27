@@ -11,7 +11,7 @@ func NewController(
 	host, port, duid, authToken string) (base.Controller, error) {
 	switch model {
 	case "samsungac2878":
-		return samsung.NewSamsungAC2878(name, host, port, duid, authToken), nil
+		return samsung.NewSamsungAC2878(name, host, port, duid, authToken)
 	}
 	return nil, fmt.Errorf("Model not supported: %s", model)
 }

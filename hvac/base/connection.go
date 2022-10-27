@@ -34,11 +34,15 @@ type TLSSocketConnection struct {
 	host     string
 	port     string
 	conn     *tls.Conn
+	cert     tls.Certificate
 	receiver Receiver
 }
 
-func NewTLSSocketConnection() Connection {
-	return &TLSSocketConnection{}
+func NewTLSSocketConnection() (Connection, error) {
+	c := TLSSocketConnection{}
+	cert, err := tls.LoadX509KeyPair("ac14k_m.pem", "ac14k_m.pem")
+	c.cert = cert
+	return &c, err
 }
 
 func (c *TLSSocketConnection) Connect(host, port string, receiver Receiver) {
@@ -58,15 +62,16 @@ func (c *TLSSocketConnection) dialUntilConnected() {
 	c.resetConnection(nil)
 	for {
 		config := &tls.Config{
-    CipherSuites: []uint16{
-        tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-        tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-    },
-    PreferServerCipherSuites: true,
-   // InsecureSkipVerify:       true,
-    MinVersion:               tls.VersionTLS10,
-    MaxVersion:               tls.VersionTLS10,
-			ClientAuth:         tls.NoClientCert,
+			CipherSuites: []uint16{
+				tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+				tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			},
+			PreferServerCipherSuites: true,
+			MinVersion: tls.VersionTLS10,
+			MaxVersion: tls.VersionTLS10,
+			Certificates: []tls.Certificate{c.cert},
 			InsecureSkipVerify: true,
 		}
 		// TODO(gsasha): is there a need to time out Dial?
