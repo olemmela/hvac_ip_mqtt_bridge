@@ -27,13 +27,13 @@ func fromAc(value string, table []translationEntry) string {
 	return strings.ToLower(value)
 }
 
-var powerModeTable = []translationEntry{
-	{"ON", "On"},
+var booleanTable = []translationEntry{
+	{"on", "On"},
 	{"off", "Off"},
 }
 
-func PowerModeToAC(mode string) string   { return toAc(mode, powerModeTable) }
-func PowerModeFromAC(mode string) string { return fromAc(mode, powerModeTable) }
+func booleanToAC(mode string) string   { return toAc(mode, booleanTable) }
+func booleanFromAC(mode string) string { return fromAc(mode, booleanTable) }
 
 var opModeTable = []translationEntry{
 	{"cool", "Cool"},
@@ -51,8 +51,31 @@ var fanModeTable = []translationEntry{
 	{"auto", "Auto"},
 	{"low", "Low"},
 	{"medium", "Mid"},
-	{"high", "Turbo"},
+	{"high", "High"},
+	{"turbo", "Turbo"},
 }
 
 func FanModeToAC(mode string) string   { return toAc(mode, fanModeTable) }
 func FanModeFromAC(mode string) string { return fromAc(mode, fanModeTable) }
+
+var presetModeTable = []translationEntry{
+	{"none", "Off"},
+	{"eco", "Quiet"},
+	{"sleep", "Sleep"},
+	{"smart", "Smart"},
+	{"comfort", "SoftCool"},
+	{"boost", "TurboMode"},
+}
+
+func PresetModeToAC(mode string) string   { return toAc(mode, presetModeTable) }
+func PresetModeFromAC(mode string) string { return fromAc(mode, presetModeTable) }
+
+var swingModeTable = []translationEntry{
+	{"horizontal", "SwingLR"},
+	{"vertical", "SwingUD"},
+	{"off", "Fixed"},
+	{"both", "Rotation"},
+}
+
+func SwingModeToAC(mode string) string   { return toAc(mode, swingModeTable) }
+func SwingModeFromAC(mode string) string { return fromAc(mode, swingModeTable) }

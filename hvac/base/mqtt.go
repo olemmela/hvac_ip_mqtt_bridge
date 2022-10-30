@@ -19,6 +19,14 @@ const (
 	temperatureStateTopic        = "temperature/state"
 	fanModeCommandTopic          = "fan_mode/set"
 	fanModeStateTopic            = "fan_mode/state"
+	presetModeCommandTopic       = "preset_mode/set"
+	presetModeStateTopic         = "preset_mode/state"
+	swingModeCommandTopic        = "swing_mode/set"
+	swingModeStateTopic          = "swing_mode/state"
+	purifyCommandTopic           = "purify/set"
+	purifyStateTopic             = "purify/state"
+	automaticCleanCommandTopic   = "automatic_clean/set"
+	automaticCleanStateTopic     = "automatic_clean/state"
 )
 
 type MQTT struct {
@@ -43,6 +51,18 @@ func (m *MQTTNotifier) UpdateOpMode(opMode string) {
 }
 func (m *MQTTNotifier) UpdateFanMode(fanMode string) {
 	m.mqtt.updateFanMode(m.prefix, fanMode)
+}
+func (m *MQTTNotifier) UpdatePresetMode(presetMode string) {
+	m.mqtt.updatePresetMode(m.prefix, presetMode)
+}
+func (m *MQTTNotifier) UpdateSwingMode(swingMode string) {
+	m.mqtt.updateSwingMode(m.prefix, swingMode)
+}
+func (m *MQTTNotifier) UpdatePurify(status string) {
+	m.mqtt.updatePurify(m.prefix, status)
+}
+func (m *MQTTNotifier) UpdateAutomaticClean(status string) {
+	m.mqtt.updateAutomaticClean(m.prefix, status)
 }
 func (m *MQTTNotifier) UpdateTemperature(temperature string) {
 	m.mqtt.updateTemperature(m.prefix, temperature)
@@ -132,6 +152,26 @@ func (m *MQTT) subscribeTopics() {
 					log.Println("Received %s:%s:%s", key, message.Topic(), string(message.Payload()))
 					m.controllers[key].SetFanMode(string(message.Payload()))
 				}),
+			m.client.Subscribe(prefix+"/"+presetModeCommandTopic, 0,
+				func(client mqtt.Client, message mqtt.Message) {
+					log.Println("Received %s:%s:%s", key, message.Topic(), string(message.Payload()))
+					m.controllers[key].SetPresetMode(string(message.Payload()))
+				}),
+			m.client.Subscribe(prefix+"/"+swingModeCommandTopic, 0,
+				func(client mqtt.Client, message mqtt.Message) {
+					log.Println("Received %s:%s:%s", key, message.Topic(), string(message.Payload()))
+					m.controllers[key].SetSwingMode(string(message.Payload()))
+				}),
+			m.client.Subscribe(prefix+"/"+purifyCommandTopic, 0,
+				func(client mqtt.Client, message mqtt.Message) {
+					log.Println("Received %s:%s:%s", key, message.Topic(), string(message.Payload()))
+					m.controllers[key].SetPurify(string(message.Payload()))
+				}),
+			m.client.Subscribe(prefix+"/"+automaticCleanCommandTopic, 0,
+				func(client mqtt.Client, message mqtt.Message) {
+					log.Println("Received %s:%s:%s", key, message.Topic(), string(message.Payload()))
+					m.controllers[key].SetAutomaticClean(string(message.Payload()))
+				}),
 			m.client.Subscribe(prefix+"/"+temperatureCommandTopic, 0,
 				func(client mqtt.Client, message mqtt.Message) {
 					log.Println("Received %s:%s:%s", key, message.Topic(), string(message.Payload()))
@@ -157,6 +197,18 @@ func (m *MQTT) updateOpMode(prefix string, opMode string) {
 }
 func (m *MQTT) updateFanMode(prefix string, fanMode string) {
 	m.publish(prefix, fanModeStateTopic, fanMode)
+}
+func (m *MQTT) updatePresetMode(prefix string, presetMode string) {
+	m.publish(prefix, presetModeStateTopic, presetMode)
+}
+func (m *MQTT) updateSwingMode(prefix string, swingMode string) {
+	m.publish(prefix, swingModeStateTopic, swingMode)
+}
+func (m *MQTT) updatePurify(prefix string, status string) {
+	m.publish(prefix, purifyStateTopic, status)
+}
+func (m *MQTT) updateAutomaticClean(prefix string, status string) {
+	m.publish(prefix, automaticCleanStateTopic, status)
 }
 func (m *MQTT) updateTemperature(prefix string, temperature string) {
 	m.publish(prefix, temperatureStateTopic, temperature)

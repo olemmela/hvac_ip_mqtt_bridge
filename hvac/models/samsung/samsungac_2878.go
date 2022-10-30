@@ -74,14 +74,26 @@ var (
 	setFanModeTemplate = template.Must(template.New("setFanMode").Parse(
 		`<Request Type="DeviceControl"><Control CommandID="AC_FUN_WINDLEVEL" DUID="{{.duid}}"><Attr ID="AC_FUN_WINDLEVEL" Value="{{.value}}" /></Control></Request>
 `))
+	setPresetModeTemplate = template.Must(template.New("setPresetMode").Parse(
+		`<Request Type="DeviceControl"><Control CommandID="AC_FUN_COMODE" DUID="{{.duid}}"><Attr ID="AC_FUN_COMODE" Value="{{.value}}" /></Control></Request>
+`))
+	setSwingModeTemplate = template.Must(template.New("setSwingMode").Parse(
+		`<Request Type="DeviceControl"><Control CommandID="AC_FUN_DIRECTION" DUID="{{.duid}}"><Attr ID="AC_FUN_DIRECTION" Value="{{.value}}" /></Control></Request>
+`))
 	setTemperatureTemplate = template.Must(template.New("setTemperature").Parse(
 		`<Request Type="DeviceControl"><Control CommandID="AC_FUN_TEMPSET" DUID="{{.duid}}"><Attr ID="AC_FUN_TEMPSET" Value="{{.value}}" /></Control></Request>
+`))
+	setPurifyTemplate = template.Must(template.New("setPurify").Parse(
+		`<Request Type="DeviceControl"><Control CommandID="AC_ADD_SPI" DUID="{{.duid}}"><Attr ID="AC_ADD_SPI" Value="{{.value}}" /></Control></Request>
+`))
+	setAutomaticCleanTemplate = template.Must(template.New("setAutomaticClean").Parse(
+		`<Request Type="DeviceControl"><Control CommandID="AC_ADD_AUTOCLEAN" DUID="{{.duid}}"><Attr ID="AC_ADD_AUTOCLEAN" Value="{{.value}}" /></Control></Request>
 `))
 )
 
 func (c *SamsungAC2878) SetPowerMode(powerMode string) {
 	c.sendMessage(setPowerModeTemplate, map[string]string{
-		"value": PowerModeToAC(powerMode),
+		"value": booleanToAC(powerMode),
 		"duid":  c.duid,
 	})
 }
@@ -103,6 +115,34 @@ func (c *SamsungAC2878) SetOpMode(mode string) {
 func (c *SamsungAC2878) SetFanMode(fanMode string) {
 	c.sendMessage(setFanModeTemplate, map[string]string{
 		"value": FanModeToAC(fanMode),
+		"duid":  c.duid,
+	})
+}
+
+func (c *SamsungAC2878) SetPresetMode(presetMode string) {
+	c.sendMessage(setPresetModeTemplate, map[string]string{
+		"value": PresetModeToAC(presetMode),
+		"duid":  c.duid,
+	})
+}
+
+func (c *SamsungAC2878) SetSwingMode(swingMode string) {
+	c.sendMessage(setSwingModeTemplate, map[string]string{
+		"value": SwingModeToAC(swingMode),
+		"duid":  c.duid,
+	})
+}
+
+func (c *SamsungAC2878) SetPurify(status string) {
+	c.sendMessage(setPurifyTemplate, map[string]string{
+		"value": booleanToAC(status),
+		"duid":  c.duid,
+	})
+}
+
+func (c *SamsungAC2878) SetAutomaticClean(status string) {
+	c.sendMessage(setAutomaticCleanTemplate, map[string]string{
+		"value": booleanToAC(status),
 		"duid":  c.duid,
 	})
 }
@@ -267,10 +307,18 @@ func (c *SamsungAC2878) handleAttributes(attrs []Attr) {
 		case "AC_FUN_OPMODE":
 			c.opMode = attr.Value
 			c.handleOpModeUpdate()
+		case "AC_FUN_COMODE":
+			c.stateNotifier.UpdatePresetMode(PresetModeFromAC(attr.Value))
+		case "AC_FUN_DIRECTION":
+			c.stateNotifier.UpdateSwingMode(SwingModeFromAC(attr.Value))
 		case "AC_FUN_TEMPSET":
 			c.stateNotifier.UpdateTemperature(attr.Value)
 		case "AC_FUN_TEMPNOW":
 			c.stateNotifier.UpdateCurrentTemperature(attr.Value)
+		case "AC_ADD_SPI":
+			c.stateNotifier.UpdatePurify(booleanFromAC(attr.Value))
+		case "AC_ADD_AUTOCLEAN":
+			c.stateNotifier.UpdateAutomaticClean(booleanFromAC(attr.Value))
 		case "AC_OUTDOOR_TEMP":
 			value, err := strconv.Atoi(attr.Value)
 			if err == nil {
