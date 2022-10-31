@@ -3,7 +3,7 @@
 # docker build --label gsasha/hvac_ip_mqtt_bridge:latest .
 # docker push gsasha/hvac_ip_mqtt_bridge:latest
 # docker push gsasha/hvac_ip_mqtt_bridge:latest_arm
-FROM golang:latest
+FROM docker.io/library/golang:alpine AS build
 
 LABEL maintainer="Sasha Gontmakher <gsasha@gmail.com>"
 
@@ -15,7 +15,14 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o bridge
+RUN CGO_ENABLED=0 go build -o bridge
+
+FROM gcr.io/distroless/static
+WORKDIR /app
+USER nonroot:nonroot
+
+COPY --from=build --chown=nonroot:nonroot /data/bridge .
+COPY ac14k_m.pem .
 
 EXPOSE 8080
 
