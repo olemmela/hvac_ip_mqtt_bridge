@@ -3,6 +3,7 @@ package samsung
 import (
 	"bytes"
 	"encoding/xml"
+	"encoding/json"
 	"fmt"
 	"github.com/gsasha/hvac_ip_mqtt_bridge/hvac/base"
 	"log"
@@ -11,6 +12,62 @@ import (
 	"text/template"
 	"time"
 )
+
+type homeAssistantDevice struct {
+	Identifiers string `json:"identifiers"`
+	Name string `json:"name"`
+	Manufacturer string `json:"manufacturer"`
+	Model string `json:"model"`
+}
+
+type homeAssistantSwitchConfig struct {
+	Name string `json:"name"`
+	Id string `json:"unique_id"`
+	PayloadOn string `json:"payload_on"`
+	PayloadOff string `json:"payload_off"`
+	StateTopic string `json:"state_topic"`
+	CommandTopic string `json:"command_topic"`
+	Device homeAssistantDevice `json:"device"`
+}
+
+type homeAssistantSensorConfig struct {
+	Name string `json:"name"`
+	Id string `json:"unique_id"`
+	DeviceClass string `json:"device_class"`
+	StateTopic string `json:"state_topic"`
+	StateClass string `json:"state_class,omitempty"`
+	ValueTemplate string `json:"value_template,omitempty"`
+	Unit string `json:"unit_of_measurement"`
+	Icon string `json:"icon"`
+	Device homeAssistantDevice `json:"device"`
+}
+
+type homeAssistantClimateConfig struct {
+	Name string `json:"name"`
+	Id string `json:"unique_id"`
+	PowerCommandTopic string `json:"power_command_topic"`
+	PayloadOn string `json:"payload_on"`
+	PayloadOff string `json:"payload_off"`
+	ModeStateTopic string `json:"mode_state_topic"`
+	ModeCommandTopic string `json:"mode_command_topic"`
+	ActionTopic string `json:"action_topic"`
+	FanModeStateTopic string `json:"fan_mode_state_topic"`
+	FanModeCommandTopic string `json:"fan_mode_command_topic"`
+	FanModes []string `json:"fan_modes"`
+	TemperatureStateTopic	string `json:"temperature_state_topic"`
+	TemperatureCommandTopic string `json:"temperature_command_topic"`
+	CurrentTemperatureTopic string `json:"current_temperature_topic"`
+	PresetModeStateTopic string `json:"preset_mode_state_topic"`
+	PresetModeCommandTopic string `json:"preset_mode_command_topic"`
+	PresetModes []string `json:"preset_modes"`
+	SwingModeStateTopic string `json:"swing_mode_state_topic"`
+	SwingModeCommandTopic string `json:"swing_mode_command_topic"`
+	SwingModes []string `json:"swing_modes"`
+	Precision int `json:"precision"`
+	MinTemp int `json:"min_temp"`
+	MaxTemp int `json:"max_temp"`
+	Device homeAssistantDevice `json:"device"`
+}
 
 type SamsungAC2878 struct {
 	name      string
@@ -23,13 +80,15 @@ type SamsungAC2878 struct {
 	stateNotifier base.StateNotifier
 
 	online             bool
+	homeassistant      bool
+	prefix             string
 	err                string
 	powerMode          string
 	opMode             string
 	attrs              map[string]string
 }
 
-func NewSamsungAC2878(name string, host, port, duid, authToken string) (*SamsungAC2878, error) {
+func NewSamsungAC2878(name string, host, port, duid, authToken string, prefix string, homeassistant bool) (*SamsungAC2878, error) {
 	if port == "" {
 		port = "2878"
 	}
@@ -41,6 +100,8 @@ func NewSamsungAC2878(name string, host, port, duid, authToken string) (*Samsung
 		authToken:  authToken,
 		duid:       duid,
 		connection: conn,
+		prefix:     prefix,
+		homeassistant: homeassistant,
 		attrs:      make(map[string]string),
 	}, err
 }
@@ -49,8 +110,114 @@ func (c *SamsungAC2878) SetStateNotifier(stateNotifier base.StateNotifier) {
 	c.stateNotifier = stateNotifier
 }
 
+func (c *SamsungAC2878) SetHomeAssistantConfig() {
+	device := homeAssistantDevice{
+		Identifiers: c.duid,
+		Name: c.name,
+		Manufacturer: "Samsung",
+		Model: "Smart A/C",
+	}
+
+	climate := homeAssistantClimateConfig{
+		Name: c.name,
+		Id: c.duid,
+		PowerCommandTopic: c.prefix+"/power/set",
+		PayloadOn: "on",
+		PayloadOff: "off",
+		ModeStateTopic: c.prefix+"/mode/state",
+		ModeCommandTopic: c.prefix+"/mode/set",
+		ActionTopic: c.prefix+"/action",
+		FanModeStateTopic: c.prefix+"/fan_mode/state",
+		FanModeCommandTopic: c.prefix+"/fan_mode/set",
+		FanModes: []string{"auto", "low", "medium", "high", "turbo"},
+		TemperatureStateTopic: c.prefix+"/temperature/state",
+		TemperatureCommandTopic: c.prefix+"/temperature/set",
+		CurrentTemperatureTopic: c.prefix+"/current_temperature/state",
+		PresetModeStateTopic: c.prefix+"/preset_mode/state",
+		PresetModeCommandTopic: c.prefix+"/preset_mode/set",
+		PresetModes: []string{"eco", "sleep", "smart", "comfort", "boost"},
+		SwingModeStateTopic: c.prefix+"/swing_mode/state",
+		SwingModeCommandTopic: c.prefix+"/swing_mode/set",
+		SwingModes: []string{"horizontal", "vertical", "both", "off"},
+		Precision: 1,
+		MinTemp: 8,
+		MaxTemp: 30,
+		Device: device,
+	}
+
+	config, err := json.Marshal(climate)
+	if err == nil {
+		c.stateNotifier.UpdateHomeAssistantConfig("climate/"+c.duid+"/config", string(config))
+	}
+
+	Sensor := homeAssistantSensorConfig{
+		Name: c.name+" Outdoor Temperature",
+		Id: c.duid+".outdoor_temp",
+		StateTopic: c.prefix+"/outdoor_temperature",
+		DeviceClass: "temperature",
+		Icon: "mdi:temperature-celsius",
+		Unit: "°C",
+		Device: device,
+	}
+
+	config, err = json.Marshal(Sensor)
+	if err == nil {
+		c.stateNotifier.UpdateHomeAssistantConfig("sensor/"+c.duid+"/outdoor_temp/config", string(config))
+	}
+
+	Sensor = homeAssistantSensorConfig{
+		Name: c.name+" Energy",
+		Id: c.duid+".user_power",
+		StateTopic: c.prefix+"/used_power",
+		StateClass: "total_increasing",
+		DeviceClass: "energy",
+		ValueTemplate: "{{ value | float / 10 }}",
+		Icon: "mdi:lightning-bolt",
+		Unit: "kWh",
+		Device: device,
+	}
+
+	config, err = json.Marshal(Sensor)
+	if err == nil {
+		c.stateNotifier.UpdateHomeAssistantConfig("sensor/"+c.duid+"/used_power/config", string(config))
+	}
+
+	Switch := homeAssistantSwitchConfig{
+		Name: c.name+" Automatic Clean",
+		Id: c.duid+".automatic_clean",
+		StateTopic: c.prefix+"/automatic_clean/state",
+		CommandTopic: c.prefix+"/automatic_clean/set",
+		PayloadOn: "on",
+		PayloadOff: "off",
+		Device: device,
+	}
+
+	config, err = json.Marshal(Switch)
+	if err == nil {
+		c.stateNotifier.UpdateHomeAssistantConfig("switch/"+c.duid+"/automatic_clean/config", string(config))
+	}
+
+	Switch = homeAssistantSwitchConfig{
+		Name: c.name+" Purify",
+		Id: c.duid+".purify",
+		StateTopic: c.prefix+"/purify/state",
+		CommandTopic: c.prefix+"/purify/set",
+		PayloadOn: "on",
+		PayloadOff: "off",
+		Device: device,
+	}
+
+	config, err = json.Marshal(Switch)
+	if err == nil {
+		c.stateNotifier.UpdateHomeAssistantConfig("switch/"+c.duid+"/purify/config", string(config))
+	}
+}
+
 func (c *SamsungAC2878) Connect() {
 	c.connection.Connect(c.host, c.port, c)
+	if c.homeassistant {
+		c.SetHomeAssistantConfig()
+	}
 	go func() {
 		for range time.Tick(time.Second * 60) {
 			c.sendDeviceStateRequest()

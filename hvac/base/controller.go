@@ -11,6 +11,7 @@ type StateNotifier interface {
 	UpdateTemperature(temperature string)
 	UpdateCurrentTemperature(temperature string)
 	UpdateAttribute(topic string, attribute string)
+	UpdateHomeAssistantConfig(topic string, config string)
 }
 
 type Controller interface {
@@ -24,4 +25,5 @@ type Controller interface {
 	SetPurify(status string)
 	SetAutomaticClean(status string)
 	SetTemperature(temperature string)
+	SetHomeAssistantConfig()
 }

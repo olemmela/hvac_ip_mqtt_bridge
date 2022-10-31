@@ -28,6 +28,7 @@ type DeviceConfig struct {
 	Host       string `yaml:"host"`
 	Port       string `yaml:"port"`
 	MQTTPrefix string `yaml:"mqtt_prefix"`
+	HAPrefix   string `yaml:"ha_prefix"`
 	DUID       string `yaml:"duid"`
 	AuthToken  string `yaml:"auth_token"`
 }
@@ -44,10 +45,13 @@ func NewDevice(mqtt *base.MQTT, deviceConfig DeviceConfig) (*Device, error) {
 		deviceConfig.Host,
 		deviceConfig.Port,
 		deviceConfig.DUID,
-		deviceConfig.AuthToken)
+		deviceConfig.AuthToken,
+		deviceConfig.MQTTPrefix,
+		(deviceConfig.HAPrefix != ""),
+		)
 
 	log.Printf("Registering controller %s %s", deviceConfig.Name, deviceConfig.MQTTPrefix)
-	notifier := mqtt.RegisterController(deviceConfig.Name, deviceConfig.MQTTPrefix, controller)
+	notifier := mqtt.RegisterController(deviceConfig.Name, deviceConfig.MQTTPrefix, deviceConfig.HAPrefix, controller)
 	controller.SetStateNotifier(notifier)
 
 	if err != nil {

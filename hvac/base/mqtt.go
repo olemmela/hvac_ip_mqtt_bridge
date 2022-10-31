@@ -32,6 +32,7 @@ const (
 type MQTT struct {
 	clientId string
 	prefix   string
+	haPrefix string
 
 	client      mqtt.Client
 	controllers map[string]Controller
@@ -73,6 +74,9 @@ func (m *MQTTNotifier) UpdateCurrentTemperature(temperature string) {
 func (m *MQTTNotifier) UpdateAttribute(topic string, attribute string) {
 	m.mqtt.updateAttribute(m.prefix, topic, attribute)
 }
+func (m *MQTTNotifier) UpdateHomeAssistantConfig(topic string, config string) {
+	m.mqtt.updateHomeAssistantConfig(m.mqtt.haPrefix, topic, config)
+}
 
 func NewMQTT(broker string, username string, password string, clientId string) *MQTT {
 	log.Printf("Connecting to MQTT broker %s for %s", broker, clientId)
@@ -113,7 +117,8 @@ func NewMQTT(broker string, username string, password string, clientId string) *
 	return m
 }
 
-func (m *MQTT) RegisterController(id string, prefix string, controller Controller) StateNotifier {
+func (m *MQTT) RegisterController(id string, prefix string, haPrefix string, controller Controller) StateNotifier {
+	m.haPrefix = haPrefix
 	m.controllers[id] = controller
 	m.prefixes[id] = prefix
 	return &MQTTNotifier{
@@ -177,6 +182,13 @@ func (m *MQTT) subscribeTopics() {
 					log.Println("Received %s:%s:%s", key, message.Topic(), string(message.Payload()))
 					m.controllers[key].SetTemperature(string(message.Payload()))
 				}),
+			m.client.Subscribe(m.haPrefix+"/status", 0,
+				func(client mqtt.Client, message mqtt.Message) {
+					log.Println("Received %s:%s:%s", key, message.Topic(), string(message.Payload()))
+					if string(message.Payload()) == "online" {
+						m.controllers[key].SetHomeAssistantConfig()
+					}
+				}),
 			// TODO(gsasha): subscribe to more commands.
 		}
 		for _, token := range tokens {
@@ -218,6 +230,9 @@ func (m *MQTT) updateCurrentTemperature(prefix string, temperature string) {
 }
 func (m *MQTT) updateAttribute(prefix string, topic string, attribute string) {
 	m.publish(prefix, topic, attribute)
+}
+func (m *MQTT) updateHomeAssistantConfig(prefix string, topic string, config string) {
+	m.publish(prefix, topic, config)
 }
 func (m *MQTT) publish(prefix string, topic string, message string) {
 	log.Println("mqtt publishing", prefix+"/"+topic, message)
